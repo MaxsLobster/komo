@@ -6,15 +6,21 @@ const USER_META = {
   Anna: { initial: 'A', color: '#C4A24E' },
 }
 
+const FALLBACK_USERS = [
+  { id: 'max', name: 'Max', initial: 'M', color: '#5E8B62' },
+  { id: 'anna', name: 'Anna', initial: 'A', color: '#C4A24E' },
+]
+
 export function useUser() {
   const [selectedName, setSelectedName] = useState(() => localStorage.getItem('komo-user') || null)
   const [userList, setUserList] = useState([])
   const [user, setUser] = useState(null)
+  const [usingFallback, setUsingFallback] = useState(false)
 
-  // Load users from Supabase
+  // Load users from Supabase, fallback to local
   useEffect(() => {
-    supabase.from('users').select('*').then(({ data }) => {
-      if (data) {
+    supabase.from('users').select('*').then(({ data, error }) => {
+      if (data && data.length > 0) {
         const list = data.map(u => ({
           id: u.id,
           name: u.name,
@@ -22,6 +28,10 @@ export function useUser() {
           color: USER_META[u.name]?.color || '#5E8B62',
         }))
         setUserList(list)
+      } else {
+        // Supabase not set up yet — use fallback
+        setUserList(FALLBACK_USERS)
+        setUsingFallback(true)
       }
     })
   }, [])
@@ -29,21 +39,22 @@ export function useUser() {
   // Resolve current user when userList or selection changes
   useEffect(() => {
     if (selectedName && userList.length) {
-      const found = userList.find(u => u.name.toLowerCase() === selectedName)
+      const found = userList.find(u => u.name.toLowerCase() === selectedName) ||
+                    userList.find(u => u.id === selectedName)
       if (found) setUser(found)
     }
   }, [selectedName, userList])
 
   const selectUser = (name) => {
-    // name is 'max' or 'anna' (lowercase)
     setSelectedName(name)
     localStorage.setItem('komo-user', name)
   }
 
   return {
-    user,        // { id: UUID, name: 'Max', initial: 'M', color: '#5E8B62' }
-    userList,    // [{ id, name, initial, color }, ...]
+    user,
+    userList,
     setUser: selectUser,
     isSelected: !!selectedName && !!user,
+    usingFallback,
   }
 }
