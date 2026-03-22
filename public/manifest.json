@@ -1,0 +1,16 @@
+{
+  "name": "komo",
+  "short_name": "komo",
+  "description": "Euer Raum für das Wesentliche",
+  "start_url": "/komo/",
+  "scope": "/komo/",
+  "display": "standalone",
+  "background_color": "#F4F7F2",
+  "theme_color": "#F4F7F2",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "/komo/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/komo/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/komo/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
