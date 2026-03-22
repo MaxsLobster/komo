@@ -1,7 +1,5 @@
-import { useState, useEffect } from 'react'
-import { uuid } from '../lib/uuid'
-
-const STORAGE_KEY = 'komo-topics'
+import { useState, useEffect, useCallback } from 'react'
+import { supabase } from '../lib/supabase'
 
 function sortItems(items) {
   return [...items].sort((a, b) => {
@@ -11,72 +9,68 @@ function sortItems(items) {
 }
 
 export function useTopics() {
-  const [topics, setTopics] = useState(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY)
-      if (stored) return sortItems(JSON.parse(stored))
-    } catch {
-      // fall through
-    }
-    return []
-  })
+  const [topics, setTopics] = useState([])
+
+  const fetchTopics = useCallback(async () => {
+    const { data } = await supabase.from('topics').select('*').order('created_at', { ascending: false })
+    if (data) setTopics(sortItems(data))
+  }, [])
 
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(topics))
-    } catch {
-      // localStorage unavailable
-    }
-  }, [topics])
+    fetchTopics()
 
-  const addTopic = ({ title, notes = '', tag_id = null, is_urgent = false, proposed_date = null, created_by, assigned_to = null, parent_id = null }) => {
-    const now = new Date().toISOString()
-    const newTopic = {
-      id: uuid(),
-      title,
-      notes,
-      tag_id,
-      is_urgent,
-      proposed_date,
-      status: 'open',
-      created_by,
-      assigned_to,
-      parent_id,
-      created_at: now,
-      completed_at: null,
-    }
-    setTopics((prev) => sortItems([...prev, newTopic]))
-    return newTopic
+    const channel = supabase
+      .channel('topics-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'topics' }, () => {
+        fetchTopics()
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [fetchTopics])
+
+  const addTopic = async ({ title, notes, tag_id, is_urgent, proposed_date, created_by, assigned_to, parent_id }) => {
+    const { data } = await supabase
+      .from('topics')
+      .insert({
+        title,
+        notes: notes || null,
+        tag_id: tag_id || null,
+        is_urgent: is_urgent || false,
+        proposed_date: proposed_date || null,
+        status: 'open',
+        created_by: created_by || null,
+        assigned_to: assigned_to || null,
+        parent_id: parent_id || null,
+      })
+      .select()
+      .single()
+    return data
   }
 
-  const updateTopic = (id, updates) => {
-    setTopics((prev) => sortItems(prev.map((t) => (t.id === id ? { ...t, ...updates } : t))))
+  const updateTopic = async (id, updates) => {
+    await supabase.from('topics').update(updates).eq('id', id)
   }
 
-  const completeTopic = (id) => {
-    setTopics((prev) =>
-      sortItems(
-        prev.map((t) =>
-          t.id === id ? { ...t, status: 'done', completed_at: new Date().toISOString() } : t
-        )
-      )
-    )
+  const completeTopic = async (id) => {
+    await supabase.from('topics').update({ status: 'done', completed_at: new Date().toISOString() }).eq('id', id)
   }
 
-  const createFollowUp = (topicId) => {
-    let created = null
-    setTopics((prev) => {
-      const hasFollowUp = prev.some((t) => t.parent_id === topicId)
-      if (hasFollowUp) return prev
+  const createFollowUp = async (topicId) => {
+    const original = topics.find(t => t.id === topicId)
+    if (!original) return null
+    const hasFollowUp = topics.some(t => t.parent_id === topicId)
+    if (hasFollowUp) return null
 
-      const original = prev.find((t) => t.id === topicId)
-      if (!original) return prev
+    // Mark original as follow_up
+    await supabase.from('topics').update({ status: 'follow_up' }).eq('id', topicId)
 
-      const now = new Date().toISOString()
-      created = {
-        id: uuid(),
+    // Create the follow-up
+    const { data } = await supabase
+      .from('topics')
+      .insert({
         title: original.title,
-        notes: '',
+        notes: null,
         tag_id: original.tag_id,
         is_urgent: false,
         proposed_date: null,
@@ -84,16 +78,10 @@ export function useTopics() {
         created_by: original.created_by,
         assigned_to: original.assigned_to,
         parent_id: topicId,
-        created_at: now,
-        completed_at: null,
-      }
-
-      const updated = prev.map((t) =>
-        t.id === topicId ? { ...t, status: 'follow_up' } : t
-      )
-      return sortItems([...updated, created])
-    })
-    return created
+      })
+      .select()
+      .single()
+    return data
   }
 
   return { topics, addTopic, updateTopic, completeTopic, createFollowUp }

@@ -6,7 +6,7 @@ import DateTimePicker from './DateTimePicker';
 
 const INITIAL = { title: '', notes: '', tag_id: '', is_urgent: false, proposed_date: null, assigned_to: '' };
 
-export default function CreateTopicSheet({ isOpen, onClose, onSubmit, onSave, tags, currentUser, onCreateTag, parentTopic, editTopic }) {
+export default function CreateTopicSheet({ isOpen, onClose, onSubmit, onSave, tags, currentUser, userList, onCreateTag, parentTopic, editTopic }) {
   const [form, setForm] = useState(INITIAL);
   const [dragY, setDragY] = useState(0);
   const [dragging, setDragging] = useState(false);
@@ -40,7 +40,6 @@ export default function CreateTopicSheet({ isOpen, onClose, onSubmit, onSave, ta
   };
 
   const update = (k, v) => setForm(p => ({ ...p, [k]: v }));
-
   const handleTouchStart = (e) => { startY.current = e.touches[0].clientY; setDragging(true); };
   const handleTouchMove = (e) => { if (!dragging) return; const d = e.touches[0].clientY - startY.current; if (d > 0) setDragY(d); };
   const handleTouchEnd = () => { setDragging(false); if (dragY > 120) onClose(); setDragY(0); };
@@ -51,41 +50,19 @@ export default function CreateTopicSheet({ isOpen, onClose, onSubmit, onSave, ta
   const buttonLabel = isEdit ? 'Speichern' : 'Thema erstellen';
 
   return (
-    <div
-      onClick={onClose}
-      style={{
-        position: 'fixed', inset: 0, zIndex: 60,
-        display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
-        background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(4px)',
-      }}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          maxWidth: 430, width: '100%', background: 'white',
-          borderRadius: '24px 24px 0 0', padding: '24px 24px 40px 24px',
-          boxShadow: '0 -4px 24px rgba(0,0,0,0.08)',
-          transform: `translateY(${dragY}px)`,
-          transition: dragging ? 'none' : 'transform 0.15s ease-out',
-          maxHeight: '85vh', overflowY: 'auto',
-          WebkitOverflowScrolling: 'touch',
-        }}
-      >
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 60, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(4px)' }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ maxWidth: 430, width: '100%', background: 'white', borderRadius: '24px 24px 0 0', padding: '24px 24px 40px 24px', boxShadow: '0 -4px 24px rgba(0,0,0,0.08)', transform: `translateY(${dragY}px)`, transition: dragging ? 'none' : 'transform 0.15s ease-out', maxHeight: '85vh', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
         <div onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd} style={{ padding: '0 0 12px', cursor: 'grab', touchAction: 'none' }}>
           <div style={{ width: 40, height: 4, background: '#E4EBE4', borderRadius: 2, margin: '0 auto' }} />
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
           <h2 style={{ fontFamily: "'Lora', serif", fontSize: 22, fontWeight: 700, color: '#2C3E2D' }}>{sheetTitle}</h2>
-          <button onClick={onClose} type="button" style={{ width: 32, height: 32, borderRadius: '50%', background: '#F4F7F2', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#7D917E' }}>
-            <X size={18} />
-          </button>
+          <button onClick={onClose} type="button" style={{ width: 32, height: 32, borderRadius: '50%', background: '#F4F7F2', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#7D917E' }}><X size={18} /></button>
         </div>
 
         {parentTopic && !isEdit && (
-          <p style={{ fontSize: 13, color: '#7D917E', marginBottom: 16 }}>
-            Follow-up zu: <span style={{ fontWeight: 600, color: '#2C3E2D' }}>{parentTopic.title}</span>
-          </p>
+          <p style={{ fontSize: 13, color: '#7D917E', marginBottom: 16 }}>Follow-up zu: <span style={{ fontWeight: 600, color: '#2C3E2D' }}>{parentTopic.title}</span></p>
         )}
 
         <label style={{ fontSize: 13, fontWeight: 600, color: '#7D917E', display: 'block', marginBottom: 6 }}>Titel</label>
@@ -118,10 +95,7 @@ export default function CreateTopicSheet({ isOpen, onClose, onSubmit, onSave, ta
 
         <label style={{ fontSize: 13, fontWeight: 600, color: '#7D917E', display: 'block', marginBottom: 6 }}>Zuweisen an</label>
         <div style={{ display: 'flex', gap: 12, marginBottom: 8 }}>
-          {[
-            { id: 'max', initial: 'M', color: '#5E8B62' },
-            { id: 'anna', initial: 'A', color: '#C4A24E' },
-          ].map(u => (
+          {userList.map(u => (
             <button key={u.id} type="button" onClick={() => update('assigned_to', u.id)}
               style={{
                 width: 36, height: 36, borderRadius: '50%', border: 'none',
@@ -135,15 +109,7 @@ export default function CreateTopicSheet({ isOpen, onClose, onSubmit, onSave, ta
           ))}
         </div>
 
-        <button type="button" onClick={doSubmit}
-          style={{
-            width: '100%', padding: 16, background: form.title.trim() ? '#5E8B62' : '#B0B8B0', color: 'white',
-            border: 'none', borderRadius: 14, fontSize: 16, fontWeight: 700,
-            marginTop: 16, cursor: form.title.trim() ? 'pointer' : 'default',
-            boxShadow: form.title.trim() ? '0 4px 16px rgba(94,139,98,0.3)' : 'none',
-            fontFamily: "'Plus Jakarta Sans', sans-serif", WebkitAppearance: 'none',
-            position: 'relative', zIndex: 10, transition: 'background 0.2s, box-shadow 0.2s',
-          }}>{buttonLabel}</button>
+        <button type="button" onClick={doSubmit} style={{ width: '100%', padding: 16, background: form.title.trim() ? '#5E8B62' : '#B0B8B0', color: 'white', border: 'none', borderRadius: 14, fontSize: 16, fontWeight: 700, marginTop: 16, cursor: form.title.trim() ? 'pointer' : 'default', boxShadow: form.title.trim() ? '0 4px 16px rgba(94,139,98,0.3)' : 'none', fontFamily: "'Plus Jakarta Sans', sans-serif", WebkitAppearance: 'none', position: 'relative', zIndex: 10, transition: 'background 0.2s, box-shadow 0.2s' }}>{buttonLabel}</button>
       </div>
     </div>
   );

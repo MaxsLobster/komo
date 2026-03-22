@@ -1,7 +1,5 @@
-import { useState, useEffect } from 'react'
-import { uuid } from '../lib/uuid'
-
-const STORAGE_KEY = 'komo-tasks'
+import { useState, useEffect, useCallback } from 'react'
+import { supabase } from '../lib/supabase'
 
 function sortItems(items) {
   return [...items].sort((a, b) => {
@@ -11,87 +9,75 @@ function sortItems(items) {
 }
 
 export function useTasks() {
-  const [tasks, setTasks] = useState(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY)
-      if (stored) return sortItems(JSON.parse(stored))
-    } catch {
-      // fall through
-    }
-    return []
-  })
+  const [tasks, setTasks] = useState([])
+
+  const fetchTasks = useCallback(async () => {
+    const { data } = await supabase.from('tasks').select('*').order('created_at', { ascending: false })
+    if (data) setTasks(sortItems(data))
+  }, [])
 
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks))
-    } catch {
-      // localStorage unavailable
-    }
-  }, [tasks])
+    fetchTasks()
 
-  const addTask = ({ title, notes = '', tag_id = null, is_urgent = false, created_by, assigned_to = null, parent_id = null }) => {
-    const now = new Date().toISOString()
-    const newTask = {
-      id: uuid(),
-      title,
-      notes,
-      tag_id,
-      is_urgent,
-      status: 'open',
-      created_by,
-      assigned_to,
-      parent_id,
-      created_at: now,
-      completed_at: null,
-    }
-    setTasks((prev) => sortItems([...prev, newTask]))
-    return newTask
+    const channel = supabase
+      .channel('tasks-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => {
+        fetchTasks()
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [fetchTasks])
+
+  const addTask = async ({ title, notes, tag_id, is_urgent, created_by, assigned_to, parent_id }) => {
+    const { data } = await supabase
+      .from('tasks')
+      .insert({
+        title,
+        notes: notes || null,
+        tag_id: tag_id || null,
+        is_urgent: is_urgent || false,
+        status: 'open',
+        created_by: created_by || null,
+        assigned_to: assigned_to || null,
+        parent_id: parent_id || null,
+      })
+      .select()
+      .single()
+    return data
   }
 
-  const updateTask = (id, updates) => {
-    setTasks((prev) => sortItems(prev.map((t) => (t.id === id ? { ...t, ...updates } : t))))
+  const updateTask = async (id, updates) => {
+    await supabase.from('tasks').update(updates).eq('id', id)
   }
 
-  const completeTask = (id) => {
-    setTasks((prev) =>
-      sortItems(
-        prev.map((t) =>
-          t.id === id ? { ...t, status: 'done', completed_at: new Date().toISOString() } : t
-        )
-      )
-    )
+  const completeTask = async (id) => {
+    await supabase.from('tasks').update({ status: 'done', completed_at: new Date().toISOString() }).eq('id', id)
   }
 
-  const createFollowUp = (taskId) => {
-    let created = null
-    setTasks((prev) => {
-      const hasFollowUp = prev.some((t) => t.parent_id === taskId)
-      if (hasFollowUp) return prev
+  const createFollowUp = async (taskId) => {
+    const original = tasks.find(t => t.id === taskId)
+    if (!original) return null
+    const hasFollowUp = tasks.some(t => t.parent_id === taskId)
+    if (hasFollowUp) return null
 
-      const original = prev.find((t) => t.id === taskId)
-      if (!original) return prev
+    await supabase.from('tasks').update({ status: 'follow_up' }).eq('id', taskId)
 
-      const now = new Date().toISOString()
-      created = {
-        id: uuid(),
+    const { data } = await supabase
+      .from('tasks')
+      .insert({
         title: original.title,
-        notes: '',
+        notes: null,
         tag_id: original.tag_id,
         is_urgent: false,
         status: 'open',
         created_by: original.created_by,
         assigned_to: original.assigned_to,
         parent_id: taskId,
-        created_at: now,
-        completed_at: null,
-      }
-
-      const updated = prev.map((t) =>
-        t.id === taskId ? { ...t, status: 'follow_up' } : t
-      )
-      return sortItems([...updated, created])
-    })
-    return created
+      })
+      .select()
+      .single()
+    return data
   }
 
   return { tasks, addTask, updateTask, completeTask, createFollowUp }

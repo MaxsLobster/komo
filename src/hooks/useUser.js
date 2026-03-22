@@ -1,28 +1,49 @@
-import { useState, useCallback } from 'react'
-import { USERS } from '../lib/constants.js'
+import { useState, useEffect } from 'react'
+import { supabase } from '../lib/supabase'
 
-const STORAGE_KEY = 'komo-user'
+const USER_META = {
+  Max: { initial: 'M', color: '#5E8B62' },
+  Anna: { initial: 'A', color: '#C4A24E' },
+}
 
 export function useUser() {
-  const [userId, setUserId] = useState(() => {
-    try {
-      return localStorage.getItem(STORAGE_KEY)
-    } catch {
-      return null
-    }
-  })
+  const [selectedName, setSelectedName] = useState(() => localStorage.getItem('komo-user') || null)
+  const [userList, setUserList] = useState([])
+  const [user, setUser] = useState(null)
 
-  const setUser = useCallback((id) => {
-    setUserId(id)
-    try {
-      localStorage.setItem(STORAGE_KEY, id)
-    } catch {
-      // localStorage unavailable
-    }
+  // Load users from Supabase
+  useEffect(() => {
+    supabase.from('users').select('*').then(({ data }) => {
+      if (data) {
+        const list = data.map(u => ({
+          id: u.id,
+          name: u.name,
+          initial: USER_META[u.name]?.initial || u.name[0],
+          color: USER_META[u.name]?.color || '#5E8B62',
+        }))
+        setUserList(list)
+      }
+    })
   }, [])
 
-  const user = userId ? USERS[userId] : null
-  const isSelected = userId !== null && USERS[userId] !== undefined
+  // Resolve current user when userList or selection changes
+  useEffect(() => {
+    if (selectedName && userList.length) {
+      const found = userList.find(u => u.name.toLowerCase() === selectedName)
+      if (found) setUser(found)
+    }
+  }, [selectedName, userList])
 
-  return { user, setUser, isSelected }
+  const selectUser = (name) => {
+    // name is 'max' or 'anna' (lowercase)
+    setSelectedName(name)
+    localStorage.setItem('komo-user', name)
+  }
+
+  return {
+    user,        // { id: UUID, name: 'Max', initial: 'M', color: '#5E8B62' }
+    userList,    // [{ id, name, initial, color }, ...]
+    setUser: selectUser,
+    isSelected: !!selectedName && !!user,
+  }
 }

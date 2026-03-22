@@ -1,7 +1,7 @@
 import { CheckSquare } from 'lucide-react';
 import TaskCard from '../components/TaskCard';
 
-export default function Tasks({ tasks, tags, onComplete, onFollowUp, onUpdate, onEdit }) {
+export default function Tasks({ tasks, tags, userList, onComplete, onFollowUp, onUpdate, onEdit }) {
   const parents = tasks.filter((t) => !t.parent_id && t.status !== 'done');
   const getFollowUp = (parentId) => tasks.find((t) => t.parent_id === parentId && t.status === 'open');
 
@@ -21,7 +21,7 @@ export default function Tasks({ tasks, tags, onComplete, onFollowUp, onUpdate, o
         const followUp = getFollowUp(task.id);
         return (
           <div key={task.id}>
-            <TaskCard task={task} tags={tags} onComplete={onComplete} onFollowUp={onFollowUp} onUpdate={onUpdate} onEdit={onEdit} index={index} />
+            <TaskCard task={task} tags={tags} userList={userList} onComplete={onComplete} onFollowUp={onFollowUp} onUpdate={onUpdate} onEdit={onEdit} index={index} />
             {followUp && (
               <div style={{ display: 'flex', marginBottom: 14 }}>
                 <div style={{ width: 24, display: 'flex', justifyContent: 'center', flexShrink: 0 }}>

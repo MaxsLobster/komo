@@ -14,7 +14,7 @@ import CreateTagSheet from './components/CreateTagSheet';
 import FeedbackToast from './components/FeedbackToast';
 
 export default function App() {
-  const { user, setUser, isSelected } = useUser();
+  const { user, userList, setUser, isSelected } = useUser();
   const { topics, addTopic, updateTopic, completeTopic } = useTopics();
   const { tasks, addTask, updateTask, completeTask } = useTasks();
   const { tags, addTag } = useTags();
@@ -30,103 +30,36 @@ export default function App() {
   const [editTopic, setEditTopic] = useState(null);
   const [editTask, setEditTask] = useState(null);
 
-  const openTopics = topics.filter(t => t.status === 'open' || t.status === 'follow_up');
-  const openTasks = tasks.filter(t => t.status === 'open' || t.status === 'follow_up');
   const isEmpty = activeTab === 'themen'
     ? topics.filter(t => !t.parent_id && t.status !== 'done').length === 0
     : tasks.filter(t => !t.parent_id && t.status !== 'done').length === 0;
 
   const handleFabClick = () => {
     if (activeTab === 'themen') {
-      setFollowUpTopic(null);
-      setEditTopic(null);
-      setShowCreateTopic(true);
+      setFollowUpTopic(null); setEditTopic(null); setShowCreateTopic(true);
     } else {
-      setFollowUpTask(null);
-      setEditTask(null);
-      setShowCreateTask(true);
+      setFollowUpTask(null); setEditTask(null); setShowCreateTask(true);
     }
   };
 
   // Topic handlers
-  const handleCreateTopic = (data) => {
-    addTopic(data);
-    setShowCreateTopic(false);
-    setFollowUpTopic(null);
-  };
-
-  const handleSaveTopic = useCallback((topic) => {
-    updateTopic(topic.id, topic);
-    setShowCreateTopic(false);
-    setEditTopic(null);
-  }, [updateTopic]);
-
-  const handleCompleteTopic = useCallback((topic) => {
-    completeTopic(topic.id);
-    setFeedbackMessage(getRandomMessage());
-    setShowFeedback(true);
-  }, [completeTopic]);
-
-  const handleFollowUpTopic = useCallback((topic) => {
-    setEditTopic(null);
-    setFollowUpTopic(topic);
-    setShowCreateTopic(true);
-  }, []);
-
-  const handleUpdateTopic = useCallback((topic) => {
-    updateTopic(topic.id, topic);
-  }, [updateTopic]);
-
-  const handleEditTopic = useCallback((topic) => {
-    setFollowUpTopic(null);
-    setEditTopic(topic);
-    setShowCreateTopic(true);
-  }, []);
+  const handleCreateTopic = (data) => { addTopic(data); setShowCreateTopic(false); setFollowUpTopic(null); };
+  const handleSaveTopic = useCallback((topic) => { updateTopic(topic.id, topic); setShowCreateTopic(false); setEditTopic(null); }, [updateTopic]);
+  const handleCompleteTopic = useCallback((topic) => { completeTopic(topic.id); setFeedbackMessage(getRandomMessage()); setShowFeedback(true); }, [completeTopic]);
+  const handleFollowUpTopic = useCallback((topic) => { setEditTopic(null); setFollowUpTopic(topic); setShowCreateTopic(true); }, []);
+  const handleUpdateTopic = useCallback((topic) => { updateTopic(topic.id, topic); }, [updateTopic]);
+  const handleEditTopic = useCallback((topic) => { setFollowUpTopic(null); setEditTopic(topic); setShowCreateTopic(true); }, []);
 
   // Task handlers
-  const handleCreateTask = (data) => {
-    addTask(data);
-    setShowCreateTask(false);
-    setFollowUpTask(null);
-  };
+  const handleCreateTask = (data) => { addTask(data); setShowCreateTask(false); setFollowUpTask(null); };
+  const handleSaveTask = useCallback((task) => { updateTask(task.id, task); setShowCreateTask(false); setEditTask(null); }, [updateTask]);
+  const handleCompleteTask = useCallback((task) => { completeTask(task.id); setFeedbackMessage(getRandomMessage()); setShowFeedback(true); }, [completeTask]);
+  const handleFollowUpTask = useCallback((task) => { setEditTask(null); setFollowUpTask(task); setShowCreateTask(true); }, []);
+  const handleUpdateTask = useCallback((task) => { updateTask(task.id, task); }, [updateTask]);
+  const handleEditTask = useCallback((task) => { setFollowUpTask(null); setEditTask(task); setShowCreateTask(true); }, []);
 
-  const handleSaveTask = useCallback((task) => {
-    updateTask(task.id, task);
-    setShowCreateTask(false);
-    setEditTask(null);
-  }, [updateTask]);
-
-  const handleCompleteTask = useCallback((task) => {
-    completeTask(task.id);
-    setFeedbackMessage(getRandomMessage());
-    setShowFeedback(true);
-  }, [completeTask]);
-
-  const handleFollowUpTask = useCallback((task) => {
-    setEditTask(null);
-    setFollowUpTask(task);
-    setShowCreateTask(true);
-  }, []);
-
-  const handleUpdateTask = useCallback((task) => {
-    updateTask(task.id, task);
-  }, [updateTask]);
-
-  const handleEditTask = useCallback((task) => {
-    setFollowUpTask(null);
-    setEditTask(task);
-    setShowCreateTask(true);
-  }, []);
-
-  // Tag creation
-  const handleCreateTag = (name, bgColor, textColor) => {
-    addTag(name, bgColor, textColor);
-    setShowCreateTag(false);
-  };
-
-  const handleHideFeedback = useCallback(() => {
-    setShowFeedback(false);
-  }, []);
+  const handleCreateTag = (name, bgColor, textColor) => { addTag(name, bgColor, textColor); setShowCreateTag(false); };
+  const handleHideFeedback = useCallback(() => { setShowFeedback(false); }, []);
 
   if (!isSelected) {
     return <UserSelector onSelect={setUser} />;
@@ -134,70 +67,34 @@ export default function App() {
 
   return (
     <>
-      <Layout
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        greeting={getGreeting()}
-        userName={user?.name}
-        onFabClick={handleFabClick}
-        isEmpty={isEmpty}
-      >
+      <Layout activeTab={activeTab} onTabChange={setActiveTab} greeting={getGreeting()} userName={user?.name} onFabClick={handleFabClick} isEmpty={isEmpty}>
         {activeTab === 'themen' ? (
-          <Topics
-            topics={topics}
-            tags={tags}
-            onComplete={handleCompleteTopic}
-            onFollowUp={handleFollowUpTopic}
-            onUpdate={handleUpdateTopic}
-            onEdit={handleEditTopic}
-          />
+          <Topics topics={topics} tags={tags} userList={userList} onComplete={handleCompleteTopic} onFollowUp={handleFollowUpTopic} onUpdate={handleUpdateTopic} onEdit={handleEditTopic} />
         ) : (
-          <Tasks
-            tasks={tasks}
-            tags={tags}
-            onComplete={handleCompleteTask}
-            onFollowUp={handleFollowUpTask}
-            onUpdate={handleUpdateTask}
-            onEdit={handleEditTask}
-          />
+          <Tasks tasks={tasks} tags={tags} userList={userList} onComplete={handleCompleteTask} onFollowUp={handleFollowUpTask} onUpdate={handleUpdateTask} onEdit={handleEditTask} />
         )}
       </Layout>
 
       <CreateTopicSheet
         isOpen={showCreateTopic}
         onClose={() => { setShowCreateTopic(false); setFollowUpTopic(null); setEditTopic(null); }}
-        onSubmit={handleCreateTopic}
-        onSave={handleSaveTopic}
-        tags={tags}
-        currentUser={user?.id}
+        onSubmit={handleCreateTopic} onSave={handleSaveTopic}
+        tags={tags} currentUser={user?.id} userList={userList}
         onCreateTag={() => setShowCreateTag(true)}
-        parentTopic={followUpTopic}
-        editTopic={editTopic}
+        parentTopic={followUpTopic} editTopic={editTopic}
       />
 
       <CreateTaskSheet
         isOpen={showCreateTask}
         onClose={() => { setShowCreateTask(false); setFollowUpTask(null); setEditTask(null); }}
-        onSubmit={handleCreateTask}
-        onSave={handleSaveTask}
-        tags={tags}
-        currentUser={user?.id}
+        onSubmit={handleCreateTask} onSave={handleSaveTask}
+        tags={tags} currentUser={user?.id} userList={userList}
         onCreateTag={() => setShowCreateTag(true)}
-        parentTask={followUpTask}
-        editTask={editTask}
+        parentTask={followUpTask} editTask={editTask}
       />
 
-      <CreateTagSheet
-        isOpen={showCreateTag}
-        onClose={() => setShowCreateTag(false)}
-        onSubmit={handleCreateTag}
-      />
-
-      <FeedbackToast
-        message={feedbackMessage}
-        visible={showFeedback}
-        onHide={handleHideFeedback}
-      />
+      <CreateTagSheet isOpen={showCreateTag} onClose={() => setShowCreateTag(false)} onSubmit={handleCreateTag} />
+      <FeedbackToast message={feedbackMessage} visible={showFeedback} onHide={handleHideFeedback} />
     </>
   );
 }

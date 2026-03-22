@@ -1,37 +1,35 @@
 import { useState, useEffect } from 'react'
-import { DEFAULT_TAGS } from '../lib/constants.js'
-import { uuid } from '../lib/uuid'
-
-const STORAGE_KEY = 'komo-tags'
+import { supabase } from '../lib/supabase'
 
 export function useTags() {
-  const [tags, setTags] = useState(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY)
-      if (stored) return JSON.parse(stored)
-    } catch {
-      // fall through to default
-    }
-    return DEFAULT_TAGS
-  })
+  const [tags, setTags] = useState([])
 
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(tags))
-    } catch {
-      // localStorage unavailable
-    }
-  }, [tags])
+    // Initial fetch
+    supabase.from('tags').select('*').order('created_at').then(({ data }) => {
+      if (data) setTags(data)
+    })
 
-  const addTag = (name, bg_color, text_color) => {
-    const newTag = {
-      id: uuid(),
-      name,
-      bg_color,
-      text_color,
-    }
-    setTags((prev) => [...prev, newTag])
-    return newTag
+    // Realtime subscription
+    const channel = supabase
+      .channel('tags-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tags' }, () => {
+        supabase.from('tags').select('*').order('created_at').then(({ data }) => {
+          if (data) setTags(data)
+        })
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [])
+
+  const addTag = async (name, bg_color, text_color) => {
+    const { data } = await supabase
+      .from('tags')
+      .insert({ name, bg_color, text_color })
+      .select()
+      .single()
+    return data
   }
 
   return { tags, addTag }

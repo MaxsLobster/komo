@@ -2,7 +2,7 @@ import Avatar from './Avatar';
 import TagBadge from './TagBadge';
 import UrgentToggle from './UrgentToggle';
 
-export default function TaskCard({ task, tags, onComplete, onFollowUp, onUpdate, onEdit, index = 0 }) {
+export default function TaskCard({ task, tags, userList, onComplete, onFollowUp, onUpdate, onEdit, index = 0 }) {
   const tag = tags?.find((t) => t.id === task.tag_id);
   const hasFollowUp = task.status === 'follow_up';
 
@@ -42,9 +42,9 @@ export default function TaskCard({ task, tags, onComplete, onFollowUp, onUpdate,
 
       <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <Avatar user={task.created_by} size="sm" />
+          <Avatar user={task.created_by} userList={userList} size="sm" />
           {task.assigned_to && task.assigned_to !== task.created_by && (
-            <Avatar user={task.assigned_to} size="sm" />
+            <Avatar user={task.assigned_to} userList={userList} size="sm" />
           )}
         </div>
         <div style={{ display: 'flex', gap: 8 }}>

@@ -3,7 +3,7 @@ import Avatar from './Avatar';
 import TagBadge from './TagBadge';
 import UrgentToggle from './UrgentToggle';
 
-export default function TopicCard({ topic, tags, onComplete, onFollowUp, onUpdate, onEdit, index = 0 }) {
+export default function TopicCard({ topic, tags, userList, onComplete, onFollowUp, onUpdate, onEdit, index = 0 }) {
   const tag = tags?.find((t) => t.id === topic.tag_id);
   const hasFollowUp = topic.status === 'follow_up';
 
@@ -61,9 +61,9 @@ export default function TopicCard({ topic, tags, onComplete, onFollowUp, onUpdat
             {formatDate(topic.proposed_date)}
           </span>
         )}
-        <Avatar user={topic.created_by} size="sm" />
+        <Avatar user={topic.created_by} userList={userList} size="sm" />
         {topic.assigned_to && topic.assigned_to !== topic.created_by && (
-          <Avatar user={topic.assigned_to} size="sm" />
+          <Avatar user={topic.assigned_to} userList={userList} size="sm" />
         )}
       </div>
 

@@ -1,7 +1,7 @@
 import { MessageCircle } from 'lucide-react';
 import TopicCard from '../components/TopicCard';
 
-export default function Topics({ topics, tags, onComplete, onFollowUp, onUpdate, onEdit }) {
+export default function Topics({ topics, tags, userList, onComplete, onFollowUp, onUpdate, onEdit }) {
   // Build tree: parents with their follow-ups
   const parents = topics.filter((t) => !t.parent_id && t.status !== 'done');
   const getFollowUp = (parentId) => topics.find((t) => t.parent_id === parentId && t.status === 'open');
@@ -22,7 +22,7 @@ export default function Topics({ topics, tags, onComplete, onFollowUp, onUpdate,
         const followUp = getFollowUp(topic.id);
         return (
           <div key={topic.id}>
-            <TopicCard topic={topic} tags={tags} onComplete={onComplete} onFollowUp={onFollowUp} onUpdate={onUpdate} onEdit={onEdit} index={index} />
+            <TopicCard topic={topic} tags={tags} userList={userList} onComplete={onComplete} onFollowUp={onFollowUp} onUpdate={onUpdate} onEdit={onEdit} index={index} />
             {followUp && (
               <div style={{ display: 'flex', marginBottom: 14 }}>
                 {/* Vertical connector line */}
