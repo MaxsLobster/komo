@@ -3,7 +3,7 @@ import Avatar from './Avatar';
 import TagBadge from './TagBadge';
 import UrgentToggle from './UrgentToggle';
 
-export default function TopicCard({ topic, tags, onComplete, onFollowUp, onUpdate, index = 0 }) {
+export default function TopicCard({ topic, tags, onComplete, onFollowUp, onUpdate, onEdit, index = 0 }) {
   const tag = tags?.find((t) => t.id === topic.tag_id);
   const hasFollowUp = topic.status === 'follow_up';
 
@@ -19,6 +19,7 @@ export default function TopicCard({ topic, tags, onComplete, onFollowUp, onUpdat
   return (
     <div
       className="card-tap animate-slide-up"
+      onClick={() => onEdit?.(topic)}
       style={{
         background: 'white',
         borderRadius: 20,
@@ -28,6 +29,7 @@ export default function TopicCard({ topic, tags, onComplete, onFollowUp, onUpdat
         border: topic.is_urgent ? '1.5px solid #C07A5A' : '1.5px solid transparent',
         animationDelay: `${index * 50}ms`,
         opacity: 0,
+        cursor: 'pointer',
       }}
     >
       {/* Row 1: Tag + Urgent */}
@@ -35,34 +37,18 @@ export default function TopicCard({ topic, tags, onComplete, onFollowUp, onUpdat
         {tag ? <TagBadge tag={tag} /> : <span />}
         <UrgentToggle
           isUrgent={topic.is_urgent}
-          onToggle={() => onUpdate?.({ ...topic, is_urgent: !topic.is_urgent })}
+          onToggle={(e) => { e?.stopPropagation?.(); onUpdate?.({ ...topic, is_urgent: !topic.is_urgent }); }}
         />
       </div>
 
       {/* Row 2: Title */}
-      <h3 style={{
-        fontSize: 17,
-        fontWeight: 700,
-        color: '#2C3E2D',
-        lineHeight: 1.3,
-        marginTop: 10,
-        fontFamily: "'Plus Jakarta Sans', sans-serif",
-      }}>
+      <h3 style={{ fontSize: 17, fontWeight: 700, color: '#2C3E2D', lineHeight: 1.3, marginTop: 10, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
         {topic.title}
       </h3>
 
       {/* Row 3: Notes */}
       {topic.notes && (
-        <p style={{
-          fontSize: 13,
-          color: '#7D917E',
-          lineHeight: 1.5,
-          marginTop: 6,
-          display: '-webkit-box',
-          WebkitLineClamp: 2,
-          WebkitBoxOrient: 'vertical',
-          overflow: 'hidden',
-        }}>
+        <p style={{ fontSize: 13, color: '#7D917E', lineHeight: 1.5, marginTop: 6, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
           {topic.notes}
         </p>
       )}
@@ -70,18 +56,7 @@ export default function TopicCard({ topic, tags, onComplete, onFollowUp, onUpdat
       {/* Row 4: Meta */}
       <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
         {topic.proposed_date && (
-          <span style={{
-            background: '#DCE9DD',
-            color: '#5E8B62',
-            padding: '6px 12px',
-            borderRadius: 12,
-            fontSize: 12,
-            fontWeight: 600,
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 6,
-            fontFamily: "'Plus Jakarta Sans', sans-serif",
-          }}>
+          <span style={{ background: '#DCE9DD', color: '#5E8B62', padding: '6px 12px', borderRadius: 12, fontSize: 12, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
             <Calendar size={14} />
             {formatDate(topic.proposed_date)}
           </span>
@@ -95,38 +70,14 @@ export default function TopicCard({ topic, tags, onComplete, onFollowUp, onUpdat
       {/* Row 5: Actions */}
       <div style={{ marginTop: 14, display: 'flex', gap: 8 }}>
         <button
-          onClick={() => onComplete?.(topic)}
-          style={{
-            background: '#DCE9DD',
-            color: '#5E8B62',
-            padding: '10px 18px',
-            borderRadius: 12,
-            fontSize: 13,
-            fontWeight: 700,
-            border: 'none',
-            cursor: 'pointer',
-            fontFamily: "'Plus Jakarta Sans', sans-serif",
-          }}
-        >
-          Erledigt
-        </button>
+          onClick={(e) => { e.stopPropagation(); onComplete?.(topic); }}
+          style={{ background: '#DCE9DD', color: '#5E8B62', padding: '10px 18px', borderRadius: 12, fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer', fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+        >Erledigt</button>
         {!hasFollowUp && (
           <button
-            onClick={() => onFollowUp?.(topic)}
-            style={{
-              background: '#F5EED4',
-              color: '#C4A24E',
-              padding: '10px 18px',
-              borderRadius: 12,
-              fontSize: 13,
-              fontWeight: 700,
-              border: 'none',
-              cursor: 'pointer',
-              fontFamily: "'Plus Jakarta Sans', sans-serif",
-            }}
-          >
-            Nächste Schritte
-          </button>
+            onClick={(e) => { e.stopPropagation(); onFollowUp?.(topic); }}
+            style={{ background: '#F5EED4', color: '#C4A24E', padding: '10px 18px', borderRadius: 12, fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer', fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+          >Nächste Schritte</button>
         )}
       </div>
     </div>

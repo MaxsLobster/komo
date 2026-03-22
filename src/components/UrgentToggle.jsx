@@ -1,10 +1,15 @@
 import { AlertTriangle } from 'lucide-react';
 
 export default function UrgentToggle({ isUrgent, onToggle }) {
+  const handleClick = (e) => {
+    e.stopPropagation();
+    onToggle(e);
+  };
+
   return (
     <button
       type="button"
-      onClick={onToggle}
+      onClick={handleClick}
       style={{
         display: 'inline-flex',
         alignItems: 'center',

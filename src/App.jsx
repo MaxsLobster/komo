@@ -15,8 +15,8 @@ import FeedbackToast from './components/FeedbackToast';
 
 export default function App() {
   const { user, setUser, isSelected } = useUser();
-  const { topics, addTopic, updateTopic, completeTopic, createFollowUp: createTopicFollowUp } = useTopics();
-  const { tasks, addTask, updateTask, completeTask, createFollowUp: createTaskFollowUp } = useTasks();
+  const { topics, addTopic, updateTopic, completeTopic } = useTopics();
+  const { tasks, addTask, updateTask, completeTask } = useTasks();
   const { tags, addTag } = useTags();
 
   const [activeTab, setActiveTab] = useState('themen');
@@ -27,26 +27,39 @@ export default function App() {
   const [showFeedback, setShowFeedback] = useState(false);
   const [followUpTopic, setFollowUpTopic] = useState(null);
   const [followUpTask, setFollowUpTask] = useState(null);
+  const [editTopic, setEditTopic] = useState(null);
+  const [editTask, setEditTask] = useState(null);
 
-  const openTopics = topics.filter(t => t.status === 'open');
-  const openTasks = tasks.filter(t => t.status === 'open');
-  const isEmpty = activeTab === 'themen' ? openTopics.length === 0 : openTasks.length === 0;
+  const openTopics = topics.filter(t => t.status === 'open' || t.status === 'follow_up');
+  const openTasks = tasks.filter(t => t.status === 'open' || t.status === 'follow_up');
+  const isEmpty = activeTab === 'themen'
+    ? topics.filter(t => !t.parent_id && t.status !== 'done').length === 0
+    : tasks.filter(t => !t.parent_id && t.status !== 'done').length === 0;
 
   const handleFabClick = () => {
     if (activeTab === 'themen') {
       setFollowUpTopic(null);
+      setEditTopic(null);
       setShowCreateTopic(true);
     } else {
       setFollowUpTask(null);
+      setEditTask(null);
       setShowCreateTask(true);
     }
   };
 
+  // Topic handlers
   const handleCreateTopic = (data) => {
     addTopic(data);
     setShowCreateTopic(false);
     setFollowUpTopic(null);
   };
+
+  const handleSaveTopic = useCallback((topic) => {
+    updateTopic(topic.id, topic);
+    setShowCreateTopic(false);
+    setEditTopic(null);
+  }, [updateTopic]);
 
   const handleCompleteTopic = useCallback((topic) => {
     completeTopic(topic.id);
@@ -55,6 +68,7 @@ export default function App() {
   }, [completeTopic]);
 
   const handleFollowUpTopic = useCallback((topic) => {
+    setEditTopic(null);
     setFollowUpTopic(topic);
     setShowCreateTopic(true);
   }, []);
@@ -63,11 +77,24 @@ export default function App() {
     updateTopic(topic.id, topic);
   }, [updateTopic]);
 
+  const handleEditTopic = useCallback((topic) => {
+    setFollowUpTopic(null);
+    setEditTopic(topic);
+    setShowCreateTopic(true);
+  }, []);
+
+  // Task handlers
   const handleCreateTask = (data) => {
     addTask(data);
     setShowCreateTask(false);
     setFollowUpTask(null);
   };
+
+  const handleSaveTask = useCallback((task) => {
+    updateTask(task.id, task);
+    setShowCreateTask(false);
+    setEditTask(null);
+  }, [updateTask]);
 
   const handleCompleteTask = useCallback((task) => {
     completeTask(task.id);
@@ -76,6 +103,7 @@ export default function App() {
   }, [completeTask]);
 
   const handleFollowUpTask = useCallback((task) => {
+    setEditTask(null);
     setFollowUpTask(task);
     setShowCreateTask(true);
   }, []);
@@ -84,6 +112,13 @@ export default function App() {
     updateTask(task.id, task);
   }, [updateTask]);
 
+  const handleEditTask = useCallback((task) => {
+    setFollowUpTask(null);
+    setEditTask(task);
+    setShowCreateTask(true);
+  }, []);
+
+  // Tag creation
   const handleCreateTag = (name, bgColor, textColor) => {
     addTag(name, bgColor, textColor);
     setShowCreateTag(false);
@@ -114,6 +149,7 @@ export default function App() {
             onComplete={handleCompleteTopic}
             onFollowUp={handleFollowUpTopic}
             onUpdate={handleUpdateTopic}
+            onEdit={handleEditTopic}
           />
         ) : (
           <Tasks
@@ -122,28 +158,33 @@ export default function App() {
             onComplete={handleCompleteTask}
             onFollowUp={handleFollowUpTask}
             onUpdate={handleUpdateTask}
+            onEdit={handleEditTask}
           />
         )}
       </Layout>
 
       <CreateTopicSheet
         isOpen={showCreateTopic}
-        onClose={() => { setShowCreateTopic(false); setFollowUpTopic(null); }}
+        onClose={() => { setShowCreateTopic(false); setFollowUpTopic(null); setEditTopic(null); }}
         onSubmit={handleCreateTopic}
+        onSave={handleSaveTopic}
         tags={tags}
         currentUser={user?.id}
         onCreateTag={() => setShowCreateTag(true)}
         parentTopic={followUpTopic}
+        editTopic={editTopic}
       />
 
       <CreateTaskSheet
         isOpen={showCreateTask}
-        onClose={() => { setShowCreateTask(false); setFollowUpTask(null); }}
+        onClose={() => { setShowCreateTask(false); setFollowUpTask(null); setEditTask(null); }}
         onSubmit={handleCreateTask}
+        onSave={handleSaveTask}
         tags={tags}
         currentUser={user?.id}
         onCreateTag={() => setShowCreateTag(true)}
         parentTask={followUpTask}
+        editTask={editTask}
       />
 
       <CreateTagSheet
