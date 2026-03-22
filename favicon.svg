@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Combined leaf + speech bubble shape -->
+  <path
+    d="M32 4C18 4 8 14 8 28c0 8 4 14 10 18l-2 10 10-6c2 0.5 4 1 6 1 16 0 26-10 26-24S48 4 32 4z"
+    fill="#5E8B62"
+  />
+  <!-- Leaf vein / midrib -->
+  <path
+    d="M32 16c0 0-6 10-2 22"
+    stroke="#F4F7F2"
+    stroke-width="2"
+    stroke-linecap="round"
+    fill="none"
+  />
+  <!-- Side veins -->
+  <path
+    d="M30 24c-5 1-9 4-10 7M34 20c4 2 8 6 9 10M31 32c-4 1-7 3-8 5"
+    stroke="#F4F7F2"
+    stroke-width="1.5"
+    stroke-linecap="round"
+    fill="none"
+  />
+</svg>
